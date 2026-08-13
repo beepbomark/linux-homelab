@@ -1,4 +1,41 @@
-# linux-homelab
+# Linux Homelab
+
+Hands-on Linux system administration homelab built on Hyper-V to develop
+practical skills in Linux administration, networking, troubleshooting,
+automation, and infrastructure management.
+
+## Lab Environment
+
+- Windows 11 host
+- Hyper-V
+- Ubuntu Server 24.04 LTS
+- Dedicated `10.10.10.0/24` lab network
+- Windows NAT
+- SSH / VS Code Remote - SSH
+
+## Architecture
+
+TBA
+
+## Labs
+
+| Lab | Topic | Status |
+|---|---|---|
+| 01 | Linux Filesystem | Completed |
+| 02 | Users and Groups | Completed |
+| 03 | Permissions and Ownership | Next |
+| 04 | Process Management | Planned |
+| 05 | systemd and Services | Planned |
+| 06 | Networking | Planned |
+| 07 | Storage and LVM | Planned |
+| 08 | Logging and Monitoring | Planned |
+| 09 | Shell Scripting | Planned |
+| 10 | Troubleshooting | Planned |
+
+## Documentation
+
+- Hyper-V Setup
+- Remote Access and Networking
 
 ## AI Acknowledgement
 
