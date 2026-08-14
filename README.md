@@ -1,36 +1,47 @@
 # Linux Homelab
 
-Hands-on Linux system administration homelab built on Hyper-V to develop
-practical skills in Linux administration, networking, troubleshooting,
+Hands-on Linux system administration homelab for developing practical
+skills in Linux administration, networking, storage, security,
 automation, and infrastructure management.
 
-## Lab Environment
+## Lab Environments
 
-- Windows 11 host
-- Hyper-V
+### Ubuntu
+
+General-purpose Linux administration environment.
+
 - Ubuntu Server 24.04 LTS
-- Dedicated `10.10.10.0/24` lab network
-- Windows NAT
-- SSH / VS Code Remote - SSH
+- Microsoft Hyper-V
+- SSH / VS Code Remote
+- Filesystem administration
+- Users and groups
+- Networking
+- Shell scripting
 
-## Architecture
+[View Ubuntu Labs](ubuntu/)
 
-TBA
+### Red Hat Enterprise Linux
 
-## Labs
+Two-server RHEL environment for enterprise Linux administration
+practice.
 
-| Lab | Topic | Status |
-|---|---|---|
-| 01 | Linux Filesystem | Completed |
-| 02 | Users and Groups | Completed |
-| 03 | Permissions and Ownership | Next |
-| 04 | Process Management | Planned |
-| 05 | systemd and Services | Planned |
-| 06 | Networking | Planned |
-| 07 | Storage and LVM | Planned |
-| 08 | Logging and Monitoring | Planned |
-| 09 | Shell Scripting | Planned |
-| 10 | Troubleshooting | Planned |
+| Host | IP |
+|---|---|
+| rhel-server01.example.com | 172.16.0.100 |
+| rhel-tester01.example.com | 172.16.0.50 |
+
+Topics include:
+
+- RHEL system administration
+- DNF and RPM
+- systemd
+- Storage and LVM
+- SELinux
+- Networking
+- SSH
+- Troubleshooting
+
+[View RHEL Labs](rhel/)
 
 ## Documentation
 
