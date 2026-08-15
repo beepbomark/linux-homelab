@@ -15,16 +15,18 @@ services, security, and troubleshooting.
 
 | Virtual Machine | Hostname | IPv4 Address | Purpose |
 |---|---|---|---|
-| `rhel-server01` | `rhel-server01.example.com` | `172.16.0.100/24` | Primary RHEL server |
-| `rhel-tester01` | `rhel-tester01.example.com` | `172.16.0.50/24` | Secondary/test server |
+| `rhel-server01` | `rhel-server01.example.com` | `10.10.10.20/24` | Primary RHEL server |
+| `rhel-tester01` | `rhel-tester01.example.com` | `10.10.10.21/24` | Secondary/test server |
 
 ### Platform
 
 - Host OS: Windows 11
 - Hypervisor: Microsoft Hyper-V
 - Guest OS: Red Hat Enterprise Linux 9
-- Network interface: `eth0`
-- Local network: `172.16.0.0/24`
+- Hyper-V switch: `LAB-SWITCH`
+- Lab network: `10.10.10.0/24`
+- Windows host interface: `10.10.10.1/24`
+- RHEL network interface: `eth0`
 
 ---
 
@@ -34,7 +36,7 @@ The first RHEL virtual machine was configured as:
 
 ```text
 Hostname: rhel-server01.example.com
-IPv4:    172.16.0.100/24
+IPv4:    10.10.10.20/24
 RAM:     4 GB
 Disk:    40 GB
 ```
@@ -102,24 +104,29 @@ Identify the NetworkManager connection:
 nmcli connection show
 ```
 
-The `eth0` connection was assigned a new static IPv4 address:
+The `eth0` connection was configured with a static IPv4 address:
 
 ```bash
-sudo nmcli connection modify eth0 ipv4.addresses 172.16.0.50/24
+sudo nmcli connection modify eth0 \
+    ipv4.method manual \
+    ipv4.addresses 10.10.10.21/24 \
+    ipv4.gateway ""
+
 sudo nmcli connection down eth0
 sudo nmcli connection up eth0
 ```
 
-Verify:
+Verify the interface and routing configuration:
 
 ```bash
 ip addr show eth0
+ip route
 ```
 
-Expected address:
+Expected IPv4 address:
 
 ```text
-inet 172.16.0.50/24
+inet 10.10.10.21/24
 ```
 
 ---
@@ -138,8 +145,8 @@ The following entries were added while retaining the existing localhost
 entries:
 
 ```text
-172.16.0.100   rhel-server01.example.com   rhel-server01
-172.16.0.50    rhel-tester01.example.com   rhel-tester01
+10.10.10.20   rhel-server01.example.com   rhel-server01
+10.10.10.21   rhel-tester01.example.com   rhel-tester01
 ```
 
 ### Test Connectivity
@@ -179,6 +186,35 @@ ssh hanlong@rhel-server01
 
 This confirmed that both systems could be administered remotely over the
 lab network.
+
+### Windows Host Connectivity
+
+Both RHEL virtual machines are connected to the Hyper-V `LAB-SWITCH`.
+
+The Windows host has the following virtual network interface:
+
+```text
+vEthernet (LAB-SWITCH)
+IPv4: 10.10.10.1/24
+```
+
+Connectivity from the Windows host can be verified with:
+
+```powershell
+ping 10.10.10.20
+ping 10.10.10.21
+```
+
+Both RHEL servers can also be administered directly from Windows Terminal:
+
+```powershell
+ssh hanlong@10.10.10.20
+ssh hanlong@10.10.10.21
+```
+
+The Hyper-V console remains available for situations where network
+connectivity is unavailable or intentionally disrupted during
+troubleshooting exercises.
 
 ---
 
@@ -300,30 +336,40 @@ Verify that the repositories remain accessible:
 sudo dnf makecache
 ```
 
+The configuration was also verified after rebooting both virtual machines
+to confirm that the mount and repositories remained available.
+
 ---
 
 ## 7. Final Environment
 
-The completed RHEL homelab consists of:
+The completed RHEL homelab uses a dedicated Hyper-V lab network:
 
 ```text
-Windows 11
-└── Microsoft Hyper-V
-    │
-    ├── rhel-server01.example.com
-    │   └── 172.16.0.100/24
-    │
-    └── rhel-tester01.example.com
-        └── 172.16.0.50/24
+Windows 11 Host
+10.10.10.1/24
+       │
+       │
+   LAB-SWITCH
+  10.10.10.0/24
+       │
+       ├── rhel-server01.example.com
+       │   └── 10.10.10.20/24
+       │
+       └── rhel-tester01.example.com
+           └── 10.10.10.21/24
 ```
 
-The two systems can:
+The completed environment supports:
 
-- Communicate over the local network
-- Resolve each other using hostnames
-- Connect to each other using SSH
-- Access local RHEL BaseOS and AppStream repositories
-- Automatically mount the RHEL installation media
+- Communication between both RHEL systems
+- Communication between the Windows host and both RHEL systems
+- Local hostname resolution using `/etc/hosts`
+- SSH administration between RHEL systems
+- SSH administration from Windows Terminal
+- Local RHEL BaseOS and AppStream repositories
+- Persistent mounting of the RHEL installation media
+- Hyper-V console access for network and boot troubleshooting
 
 ---
 
@@ -379,6 +425,71 @@ For consistent repository access, the DVD is instead mounted at:
 
 using `/etc/fstab`.
 
+### Persistent DVD Mount
+
+The installation media was initially referenced using its filesystem UUID.
+The expected mount did not occur when testing the `/etc/fstab` configuration.
+
+The virtual optical drive was verified by mounting it manually:
+
+```bash
+mount /dev/sr0 /mnt/rhel9
+```
+
+The persistent configuration was then changed to reference the virtual
+optical device directly:
+
+```text
+/dev/sr0   /mnt/rhel9   iso9660   ro,nofail   0 0
+```
+
+After running `mount -a` and rebooting the systems, the installation media
+successfully remained available at `/mnt/rhel9`.
+
+### Windows Host Unable to Reach RHEL VMs
+
+The RHEL virtual machines were initially connected to the Hyper-V
+`Default Switch` while manually configured with addresses from the
+`172.16.0.0/24` network.
+
+Both RHEL VMs could communicate with each other because they were configured
+within the same IPv4 subnet. However, the Windows-side interface of the
+Hyper-V Default Switch belonged to a different network.
+
+The observed behaviour was:
+
+```text
+RHEL server <-> RHEL server    Working
+Windows host -> RHEL servers   Not working
+```
+
+The Windows host interfaces were inspected using:
+
+```powershell
+ipconfig
+```
+
+The dedicated `LAB-SWITCH` interface was identified as:
+
+```text
+vEthernet (LAB-SWITCH)
+IPv4: 10.10.10.1/24
+```
+
+Both RHEL VMs were moved from the Hyper-V `Default Switch` to `LAB-SWITCH`
+and assigned addresses from the `10.10.10.0/24` network.
+
+Final addressing:
+
+| Device | IPv4 Address |
+|---|---|
+| Windows host | `10.10.10.1/24` |
+| `rhel-server01` | `10.10.10.20/24` |
+| `rhel-tester01` | `10.10.10.21/24` |
+
+After the change, connectivity from Windows was successfully verified using
+both ICMP and SSH.
+
 ### RHEL Subscription Warning
 
 DNF may display:
@@ -396,14 +507,18 @@ online repositories.
 ## Skills Practised
 
 - Microsoft Hyper-V VM cloning
+- Hyper-V virtual networking
 - RHEL installation and configuration
 - Linux hostname management
 - NetworkManager configuration with `nmcli`
 - Static IPv4 addressing
+- IPv4 subnet troubleshooting
+- Linux routing inspection
 - `/etc/hosts` hostname resolution
 - SSH connectivity
+- Remote administration from Windows
 - ISO9660 filesystem mounting
 - Persistent mounts with `/etc/fstab`
 - DNF repository configuration
 - RPM/DNF package management
-- Linux troubleshooting
+- Linux network troubleshooting
