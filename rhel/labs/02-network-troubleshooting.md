@@ -113,15 +113,21 @@ Connection profile: eth0
 
 Interface: eth0
 
-IPv4 method:
+IPv4 method: manual
 
-IPv4 address:
+IPv4 address: 10.10.10.21/24
 
-Gateway:
+Gateway: None
 
-DNS:
+DNS: 172.16.0.2
 
 Observations:
+The eth0 connection uses manual IPv4 configuration with the expected 10.10.10.21/24 address.
+
+No default gateway is configured.
+
+The connection profile contains a DNS server address of 172.16.0.2.
+This address belongs to the previous network configuration and does not match the current 10.10.10.0/24 lab network.
 ```
 
 --- 
@@ -147,15 +153,20 @@ Locate the profile associated with the active Ethernet connection.
 ### My Findings
 
 ```text
-Profile file:
+Profile file: eth0.nmconnection
 
-Interface:
+Interface: eth0
 
-IPv4 method:
+IPv4 method: manual
 
-IPv4 address:
+IPv4 address: 10.10.10.21/24
 
 Observations:
+The persistent Network profile contains the expected manual IPv4 configuration of 10.10.10.21/24.
+
+The configuration stored in eth0.nmconnection matches the settings reported by NetworkManager.
+
+The profile also contains a DNS server address of 172.16.0.2, which belongs to the previous network configuration.
 ```
 
 ---
@@ -177,20 +188,32 @@ Do not manually edit the connection profile unless necessary.
 ### Questions
 
 1. Which NetworkManager command can modify an existing connection?
+   > nmcli connection modify
 2. Which property controls the IPv4 configuration method?
+   > ipv4.method
 3. Which property controls the static IPv4 address?
+   > ipv4.addresses
 4. How do you apply changes made to an existing connection profile?
+   > nmcli connection down eth0
+   > nmcli connection up eth0
 
 ### Changes Made
 
 ```text
-Record the configuration changes here.
+No changes were required. The existing eth0 NetworkManager profile
+was already configured with the required manual IPv4 address of
+10.10.10.21/24.
+
+The NetworkManager properties and commands required to configure
+the connection were identified and reviewed.
 ```
 
 ### Commands Used
 
 ```bash
-# Record commands here.
+nmcli connection show
+nmcli connection show eth0
+sudo cat /etc/NetworkManager/system-connections/eth0.nmconnection
 ```
 
 ---
@@ -210,25 +233,27 @@ Verify the active network configuration after applying your changes.
 ### Verification
 
 ```text
-Interface:
+Interface: eth0
 
-State:
+State: UP
 
-IPv4 address:
+IPv4 address: 10.10.10.21/24
 
-Network:
+Network: 10.10.10.0/24 via eth0
 
-Route:
+Route: 10.10.10.0/24 dev eth0 proto kernel scope link src 10.10.10.21 metric 100
 
-NetworkManager profile:
+NetworkManager profile: eth0 - manual IPv4 configuration using 10.10.10.21/24
 
-Result:
+Result: IPv4 configuration verified successfully.
 ```
 
 ### Commands Used
 
 ```bash
-# Record verification commands here.
+ip addr show eth0
+ip route
+nmcli connection show eth0
 ```
 
 ---
@@ -254,13 +279,20 @@ Perform tests using:
 ### My Findings
 
 ```text
-IPv4 connectivity:
+IPv4 connectivity: Successful - 10.10.10.20 responded with 0% packet loss.
 
-Short hostname:
+Short hostname: Successful - rhel-server01 resolved to
+rhel-server01.example.com (10.10.10.20) and responded with 0% packet loss.
 
-FQDN:
+FQDN: Successful - rhel-server01.example.com resolved to
+10.10.10.20 and responded with 0% packet loss.
 
 Observations:
+Connectivity to rhel-server01 was successful using its IPv4 address,
+short hostname, and FQDN.
+
+The results confirm that network connectivity and local hostname
+resolution are functioning correctly.
 ```
 
 ---
@@ -274,20 +306,24 @@ Investigate how `rhel-tester01` resolves the name of `rhel-server01`.
 1. Does `rhel-server01` resolve to the expected IPv4 address?
 2. Does `rhel-server01.example.com` resolve to the expected IPv4 address?
 3. Which local configuration file currently provides these mappings?
+   > /etc/hosts
 4. What is the difference between local `/etc/hosts` resolution and DNS-based resolution?
+   > /etc/hosts provides local hostname-to-IP mappings that must be maintained on each individual system. DNS provides centralized name resolution, allowing multiple systems to query a DNS server instead of maintaining the same mappings locally.
 
 ### My Findings
 
 ```text
-Short hostname:
+Short hostname: rhel-server01 resolves successfully.
 
-FQDN:
+FQDN: rhel-server01.example.com resolves successfully.
 
-Resolved IPv4 address:
+Resolved IPv4 address: 10.10.10.20
 
-Resolution source:
+Resolution source: /etc/hosts
 
 Observations:
+The short hostname and FQDN both resolve to 10.10.10.20 using
+entries configured locally in /etc/hosts.
 ```
 
 ---
@@ -312,21 +348,26 @@ rhel-server01
 ### My Findings
 
 ```text
-Destination:
+Destination: rhel-server01 (10.10.10.20)
 
-User:
+User: hanlong
 
-SSH connection:
+SSH connection: Successful
 
-Remote hostname:
+Remote hostname: rhel-server01.example.com
 
 Result:
+Successfully established an SSH connection from rhel-tester01 to
+rhel-server01. The whoami and hostname commands confirmed that the
+session was running as hanlong on rhel-server01.example.com.
 ```
 
 ### Commands Used
 
 ```bash
-# Record commands here.
+ssh rhel-server01
+whoami
+hostname
 ```
 
 ---
@@ -363,21 +404,26 @@ Do not modify the original file.
 ### My Findings
 
 ```text
-Source:
+Source: rhel-server01:/etc/hosts
 
-Destination:
+Destination: /tmp/hosts on rhel-tester01
 
-Transfer result:
+Transfer result: Successful
 
-File ownership:
+File ownership: hanlong:hanlong
 
 Observations:
+The /etc/hosts file was successfully copied from rhel-server01 to
+/tmp/hosts on rhel-tester01 using SCP.
+
+The copied file is owned by user hanlong and group hanlong.
 ```
 
 ### Commands Used
 
 ```bash
-# Record commands here.
+scp rhel-server01:/etc/hosts /tmp/
+ls -l /tmp/hosts
 ```
 
 ---
@@ -398,53 +444,31 @@ After the reboot, verify that:
 ### Post-Reboot Verification
 
 ```text
-Interface:
+Interface: eth0 - UP
 
-IPv4 address:
+IPv4 address: 10.10.10.21/24
 
-Route:
+Route: 10.10.10.0/24 route present through eth0
 
-Hostname resolution:
+Hostname resolution: rhel-server01 successfully resolved to 10.10.10.20
 
-Network connectivity:
+Network connectivity: Successful - rhel-server01 responded to ping
 
-SSH:
+SSH: Successful - remote login to rhel-server01 completed
 
-Result:
+Result: Network configuration and connectivity remained functional after reboot.
 ```
 
 ### Commands Used
 
 ```bash
-# Record verification commands here.
+ip addr show eth0
+ip route
+getent hosts rhel-server01
+ping -c 4 rhel-server01
+ssh rhel-server01
+hostname
+exit
 ```
 
 ---
-
-# Lab Result
-
-**Status:** Not Started
-
-## Configuration Summary
-
-```text
-Complete after finishing the lab.
-```
-
-## Verification Summary
-
-```text
-Complete after finishing the lab.
-```
-
-## What I Learned
-
-```text
-Complete after finishing the lab.
-```
-
-## Commands Practised
-
-```bash
-# Add important commands after completing the lab.
-```
